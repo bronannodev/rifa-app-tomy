@@ -1,6 +1,9 @@
 import io
 import os
+import httpx
+import asyncio
 from datetime import datetime
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -13,7 +16,26 @@ from models import Numero
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Rifa Manager")
+
+async def keep_alive():
+    await asyncio.sleep(60)
+    while True:
+        try:
+            url = os.environ.get("RENDER_EXTERNAL_URL", "http://localhost:8000")
+            async with httpx.AsyncClient() as client:
+                await client.get(f"{url}/api/stats", timeout=10)
+        except:
+            pass
+        await asyncio.sleep(600)
+
+
+@asynccontextmanager
+async def lifespan(app):
+    asyncio.create_task(keep_alive())
+    yield
+
+
+app = FastAPI(title="Rifa Manager", lifespan=lifespan)
 templates = Jinja2Templates(directory="templates")
 
 
@@ -24,19 +46,11 @@ def init_numeros(db: Session):
         db.commit()
 
 
-@app.on_event("startup")
-def startup():
-    db_gen = get_db()
-    db = next(db_gen)
-    try:
-        init_numeros(db)
-    finally:
-        db.close()
-
-
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request, db: Session = Depends(get_db)):
     total = db.query(func.count(Numero.numero)).scalar()
+    if total == 0:
+        init_numeros(db)
     vendidos = db.query(func.count(Numero.numero)).filter(Numero.vendido == True).scalar()
     disponibles = total - vendidos
     recaudado = db.query(func.sum(Numero.monto)).filter(Numero.vendido == True).scalar() or 0.0
@@ -67,6 +81,45 @@ def get_numeros(db: Session = Depends(get_db)):
     ]
 
 
+@app.get("/api/buscar/{numero}")
+def buscar_numero(numero: int, db: Session = Depends(get_db)):
+    if numero < 0 or numero > 999:
+        raise HTTPException(status_code=400, detail="Número fuera de rango (0-999)")
+    n = db.query(Numero).filter(Numero.numero == numero).first()
+    if not n:
+        raise HTTPException(status_code=404, detail="Número no encontrado")
+    return {
+        "numero": n.numero,
+        "vendido": n.vendido,
+        "nombre": n.nombre,
+        "referencia": n.referencia,
+        "monto": n.monto,
+        "metodo_pago": n.metodo_pago,
+        "fecha": n.fecha.isoformat() if n.fecha else None,
+    }
+
+
+@app.get("/api/buscar-nombre")
+def buscar_por_nombre(q: str, db: Session = Depends(get_db)):
+    if not q or len(q.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Ingresá al menos 2 caracteres")
+    resultados = db.query(Numero).filter(
+        Numero.vendido == True,
+        Numero.nombre.ilike(f"%{q.strip()}%")
+    ).order_by(Numero.numero).all()
+    return [
+        {
+            "numero": n.numero,
+            "nombre": n.nombre,
+            "referencia": n.referencia,
+            "monto": n.monto,
+            "metodo_pago": n.metodo_pago,
+            "fecha": n.fecha.isoformat() if n.fecha else None,
+        }
+        for n in resultados
+    ]
+
+
 @app.post("/api/vender")
 def vender_numero(
     numero: int = Form(...),
@@ -78,14 +131,11 @@ def vender_numero(
 ):
     if numero < 0 or numero > 999:
         raise HTTPException(status_code=400, detail="Número fuera de rango (0-999)")
-
-    # Bloqueo de concurrencia con FOR UPDATE
     n = db.query(Numero).filter(Numero.numero == numero).with_for_update().first()
     if not n:
         raise HTTPException(status_code=404, detail="Número no encontrado")
     if n.vendido:
-        raise HTTPException(status_code=409, detail=f"El número {numero} ya fue vendido")
-
+        raise HTTPException(status_code=409, detail=f"El número {numero} ya fue vendido a {n.nombre}")
     n.vendido = True
     n.nombre = nombre.strip()
     n.referencia = referencia.strip()

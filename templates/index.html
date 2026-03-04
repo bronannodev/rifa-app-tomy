@@ -208,6 +208,21 @@
             </button>
           </div>
 
+          <!-- Buscador de cliente -->
+        <div class="border-t border-slate-200 pt-5 space-y-3">
+            <h3 class="text-sm font-bold text-slate-700">Buscar Cliente</h3>
+            <div class="flex gap-2">
+              <input id="b-query" type="text" placeholder="Nombre o número..."
+                class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                onkeydown="if(event.key==='Enter') buscarCliente()"/>
+              <button onclick="buscarCliente()"
+                class="px-3 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors">
+                <span class="material-symbols-outlined text-lg">search</span>
+              </button>
+            </div>
+            <div id="b-resultados" class="space-y-2"></div>
+          </div>
+
           <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
             <div class="flex items-start gap-3">
               <span class="material-symbols-outlined text-primary text-lg flex-shrink-0">info</span>
@@ -445,6 +460,55 @@ function mostrarToast(msg, tipo = 'success') {
   t.textContent = msg;
   t.className = `${tipo} show`;
   setTimeout(() => t.className = '', 3000);
+}
+
+async function buscarCliente() {
+  const q = document.getElementById('b-query').value.trim();
+  const container = document.getElementById('b-resultados');
+  if (!q) return;
+
+  container.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">Buscando...</p>';
+
+  try {
+    // Si es número puro, busca por número exacto
+    if (/^\d+$/.test(q) && parseInt(q) >= 0 && parseInt(q) <= 999) {
+      const res = await fetch(`/api/buscar/${parseInt(q)}`);
+      const n = await res.json();
+      if (!res.ok) { container.innerHTML = `<p class="text-xs text-red-500">${n.detail}</p>`; return; }
+      container.innerHTML = renderResultado(n);
+    } else {
+      // Busca por nombre
+      const res = await fetch(`/api/buscar-nombre?q=${encodeURIComponent(q)}`);
+      const lista = await res.json();
+      if (!res.ok || lista.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">Sin resultados</p>'; return;
+      }
+      container.innerHTML = lista.map(renderResultado).join('');
+    }
+  } catch(e) {
+    container.innerHTML = '<p class="text-xs text-red-500">Error de red</p>';
+  }
+}
+
+function renderResultado(n) {
+  const num = String(n.numero).padStart(3,'0');
+  const estado = n.vendido
+    ? `<span class="text-green-600 font-bold">Vendido</span>`
+    : `<span class="text-slate-400 font-bold">Disponible</span>`;
+  return `
+    <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs space-y-1">
+      <div class="flex justify-between items-center">
+        <span class="font-bold text-base text-slate-800">#${num}</span>
+        ${estado}
+      </div>
+      ${n.vendido ? `
+        <div class="text-slate-600"><span class="font-semibold">Nombre:</span> ${n.nombre || '—'}</div>
+        <div class="text-slate-600"><span class="font-semibold">Ref:</span> ${n.referencia || '—'}</div>
+        <div class="text-slate-600"><span class="font-semibold">Monto:</span> $${n.monto || '—'} · ${n.metodo_pago || '—'}</div>
+        <div class="text-slate-500">${n.fecha ? n.fecha.replace('T',' ').substring(0,16) : '—'}</div>
+      ` : ''}
+    </div>
+  `;
 }
 
 cargarDatos();
