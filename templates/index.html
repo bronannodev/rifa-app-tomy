@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎟️ Gestión de Rifa</title>
+<style>
+  :root {
+    --verde: #2e7d32;
+    --verde-claro: #4caf50;
+    --gris: #90a4ae;
+    --gris-claro: #eceff1;
+    --acento: #ff6f00;
+    --bg: #f0f4f8;
+    --card: #ffffff;
+    --texto: #1a1a2e;
+    --sombra: 0 2px 12px rgba(0,0,0,0.10);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--texto); min-height: 100vh; }
+
+  header {
+    background: linear-gradient(135deg, #1a472a 0%, #2e7d32 100%);
+    color: white; padding: 18px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px; box-shadow: var(--sombra);
+    position: sticky; top: 0; z-index: 100;
+  }
+  header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
+  header small { font-size: 0.8rem; opacity: 0.8; }
+
+  .stats-bar {
+    display: flex; gap: 12px; padding: 16px 16px 0;
+    flex-wrap: wrap;
+  }
+  .stat-card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 14px 18px; flex: 1; min-width: 130px;
+    box-shadow: var(--sombra); text-align: center;
+  }
+  .stat-card .valor { font-size: 1.8rem; font-weight: 800; color: var(--verde); }
+  .stat-card .label { font-size: 0.72rem; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .stat-card.acento .valor { color: var(--acento); }
+
+  .container { padding: 16px; max-width: 1200px; margin: 0 auto; }
+
+  .panel {
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--sombra); padding: 18px; margin-bottom: 16px;
+  }
+  .panel-title { font-size: 0.9rem; font-weight: 700; color: #444; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
+
+  /* Formulario */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 480px) { .form-grid { grid-template-columns: 1fr; } }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 0.78rem; font-weight: 600; color: #555; }
+  .form-group input, .form-group select {
+    padding: 9px 12px; border: 1.5px solid #ddd; border-radius: 8px;
+    font-size: 0.92rem; background: #fafafa; transition: border 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus {
+    outline: none; border-color: var(--verde); background: white;
+  }
+  .form-group.full { grid-column: 1 / -1; }
+
+  .btn {
+    padding: 10px 20px; border: none; border-radius: 8px; font-weight: 700;
+    font-size: 0.9rem; cursor: pointer; transition: all 0.2s; display: inline-flex;
+    align-items: center; gap: 6px;
+  }
+  .btn-green { background: var(--verde); color: white; }
+  .btn-green:hover { background: #1b5e20; }
+  .btn-orange { background: var(--acento); color: white; }
+  .btn-orange:hover { background: #e65100; }
+  .btn-gray { background: #78909c; color: white; }
+  .btn-gray:hover { background: #546e7a; }
+  .btn-red { background: #c62828; color: white; font-size: 0.78rem; padding: 6px 12px; }
+  .btn-red:hover { background: #b71c1c; }
+
+  /* Controles de filtro y búsqueda */
+  .controles { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .controles input[type=text] {
+    padding: 9px 12px; border: 1.5px solid #ddd; border-radius: 8px;
+    font-size: 0.9rem; flex: 1; min-width: 120px;
+  }
+  .controles input:focus { outline: none; border-color: var(--verde); }
+  .filtro-btns { display: flex; gap: 6px; }
+  .filtro-btn {
+    padding: 8px 14px; border: 1.5px solid #ddd; border-radius: 8px;
+    background: white; font-size: 0.82rem; cursor: pointer; font-weight: 600; transition: all 0.2s;
+  }
+  .filtro-btn.activo { background: var(--verde); color: white; border-color: var(--verde); }
+
+  /* Grilla de números */
+  #grilla {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+    gap: 5px;
+    max-height: 520px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+  .num-cell {
+    aspect-ratio: 1;
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 700; cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    user-select: none;
+  }
+  .num-cell:hover { transform: scale(1.12); box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1; }
+  .num-cell.disponible { background: var(--gris-claro); color: #546e7a; border: 1.5px solid #cfd8dc; }
+  .num-cell.vendido { background: var(--verde-claro); color: white; border: 1.5px solid var(--verde); }
+  .num-cell.oculto { display: none; }
+
+  /* Rangos disponibles */
+  .rangos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+  .rango-card {
+    border: 1.5px solid #ddd; border-radius: 10px; padding: 10px 12px;
+    background: #fafafa;
+  }
+  .rango-card .rango-titulo { font-size: 0.78rem; font-weight: 700; color: #444; margin-bottom: 6px; }
+  .rango-card .rango-numeros { font-size: 0.7rem; color: #666; line-height: 1.5; word-break: break-all; }
+  .rango-card .btn-copiar {
+    margin-top: 8px; width: 100%; padding: 6px;
+    border: none; border-radius: 6px; background: #e3f2fd;
+    color: #1565c0; font-size: 0.75rem; font-weight: 700; cursor: pointer;
+  }
+  .rango-card .btn-copiar:hover { background: #1565c0; color: white; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55); z-index: 500;
+    align-items: center; justify-content: center; padding: 16px;
+  }
+  .modal-overlay.activo { display: flex; }
+  .modal {
+    background: white; border-radius: var(--radius); padding: 24px;
+    max-width: 380px; width: 100%; box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+    animation: slideUp 0.2s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal h3 { margin-bottom: 14px; font-size: 1.05rem; }
+  .modal-info { font-size: 0.85rem; color: #555; margin-bottom: 14px; line-height: 1.6; }
+  .modal-info strong { color: var(--texto); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #1a1a2e; color: white; padding: 12px 20px; border-radius: 10px;
+    font-size: 0.88rem; font-weight: 600; z-index: 999; transition: transform 0.3s;
+    pointer-events: none; white-space: nowrap;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.error { background: #c62828; }
+
+  .acciones-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .divider { border: none; border-top: 1.5px solid #eee; margin: 4px 0 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🎟️ Gestión de Rifa</h1>
+    <small>Números 000 – 999</small>
+  </div>
+  <a href="/descargar-excel" class="btn btn-orange">⬇️ Descargar Excel</a>
+</header>
+
+<div class="stats-bar">
+  <div class="stat-card">
+    <div class="valor" id="stat-vendidos">{{ vendidos }}</div>
+    <div class="label">Vendidos</div>
+  </div>
+  <div class="stat-card">
+    <div class="valor" id="stat-disponibles" style="color:#78909c">{{ disponibles }}</div>
+    <div class="label">Disponibles</div>
+  </div>
+  <div class="stat-card acento">
+    <div class="valor" id="stat-recaudado">${{ "%.0f"|format(recaudado) }}</div>
+    <div class="label">Recaudado</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Formulario vender -->
+  <div class="panel">
+    <div class="panel-title">📋 Registrar Venta</div>
+    <div class="form-grid" id="form-venta">
+      <div class="form-group">
+        <label>Número (0–999)</label>
+        <input type="number" id="f-numero" min="0" max="999" placeholder="Ej: 42">
+      </div>
+      <div class="form-group">
+        <label>Nombre</label>
+        <input type="text" id="f-nombre" placeholder="Nombre del comprador">
+      </div>
+      <div class="form-group">
+        <label>Referencia</label>
+        <input type="text" id="f-referencia" placeholder="Comprobante / referencia">
+      </div>
+      <div class="form-group">
+        <label>Monto</label>
+        <input type="number" id="f-monto" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Método de Pago</label>
+        <select id="f-metodo">
+          <option value="transferencia">Transferencia</option>
+          <option value="efectivo">Efectivo</option>
+        </select>
+      </div>
+      <div class="form-group" style="justify-content:flex-end; padding-top:20px;">
+        <button class="btn btn-green" onclick="venderNumero()">✅ Registrar Venta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grilla -->
+  <div class="panel">
+    <div class="panel-title">🔢 Tablero de Números</div>
+    <div class="controles">
+      <input type="text" id="buscador" placeholder="🔍 Buscar número..." oninput="filtrar()" style="max-width:180px;">
+      <div class="filtro-btns">
+        <button class="filtro-btn activo" onclick="setFiltro('todos', this)">Todos</button>
+        <button class="filtro-btn" onclick="setFiltro('vendidos', this)">Vendidos</button>
+        <button class="filtro-btn" onclick="setFiltro('disponibles', this)">Disponibles</button>
+      </div>
+    </div>
+    <hr class="divider">
+    <div id="grilla"></div>
+  </div>
+
+  <!-- Rangos disponibles -->
+  <div class="panel">
+    <div class="panel-title">📋 Números Disponibles por Rango</div>
+    <div class="rangos-grid" id="rangos"></div>
+  </div>
+
+</div>
+
+<!-- Modal detalle número -->
+<div class="modal-overlay" id="modal" onclick="cerrarModal(event)">
+  <div class="modal" id="modal-content">
+    <h3 id="modal-titulo"></h3>
+    <div class="modal-info" id="modal-info"></div>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+let numeros = [];
+let filtroActual = 'todos';
+
+async function cargarDatos() {
+  const res = await fetch('/api/numeros');
+  numeros = await res.json();
+  renderGrilla();
+  renderRangos();
+  actualizarStats();
+}
+
+async function actualizarStats() {
+  const r = await fetch('/api/stats');
+  const d = await r.json();
+  document.getElementById('stat-vendidos').textContent = d.vendidos;
+  document.getElementById('stat-disponibles').textContent = d.disponibles;
+  document.getElementById('stat-recaudado').textContent = '$' + Math.round(d.recaudado).toLocaleString();
+}
+
+function renderGrilla() {
+  const grilla = document.getElementById('grilla');
+  const busqueda = document.getElementById('buscador').value.trim();
+  grilla.innerHTML = '';
+  numeros.forEach(n => {
+    const div = document.createElement('div');
+    div.className = 'num-cell ' + (n.vendido ? 'vendido' : 'disponible');
+    div.textContent = String(n.numero).padStart(3, '0');
+    div.title = n.vendido ? `${n.numero} – ${n.nombre}` : `${n.numero} – Disponible`;
+    div.onclick = () => abrirModal(n);
+
+    const mostrarFiltro =
+      filtroActual === 'todos' ||
+      (filtroActual === 'vendidos' && n.vendido) ||
+      (filtroActual === 'disponibles' && !n.vendido);
+
+    const mostrarBusqueda = busqueda === '' || String(n.numero).padStart(3,'0').includes(busqueda) || String(n.numero).includes(busqueda);
+
+    if (!mostrarFiltro || !mostrarBusqueda) div.classList.add('oculto');
+    grilla.appendChild(div);
+  });
+}
+
+function renderRangos() {
+  const container = document.getElementById('rangos');
+  container.innerHTML = '';
+  for (let base = 0; base < 1000; base += 100) {
+    const disponibles = numeros.filter(n => n.numero >= base && n.numero < base + 100 && !n.vendido);
+    const card = document.createElement('div');
+    card.className = 'rango-card';
+    const lista = disponibles.map(n => String(n.numero).padStart(3,'0')).join(', ');
+    card.innerHTML = `
+      <div class="rango-titulo">${String(base).padStart(3,'0')} – ${String(base+99).padStart(3,'0')} (${disponibles.length} disp.)</div>
+      <div class="rango-numeros">${lista || '<em style="color:#aaa">Ninguno disponible</em>'}</div>
+      ${disponibles.length > 0 ? `<button class="btn-copiar" onclick="copiarRango('${lista}', this)">📋 Copiar lista</button>` : ''}
+    `;
+    container.appendChild(card);
+  }
+}
+
+function copiarRango(texto, btn) {
+  navigator.clipboard.writeText(texto).then(() => {
+    btn.textContent = '✅ Copiado!';
+    setTimeout(() => btn.textContent = '📋 Copiar lista', 1800);
+  });
+}
+
+function setFiltro(f, btn) {
+  filtroActual = f;
+  document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('activo'));
+  btn.classList.add('activo');
+  filtrar();
+}
+
+function filtrar() { renderGrilla(); }
+
+function abrirModal(n) {
+  const titulo = document.getElementById('modal-titulo');
+  const info = document.getElementById('modal-info');
+  const actions = document.getElementById('modal-actions');
+  titulo.textContent = `Número ${String(n.numero).padStart(3,'0')}`;
+
+  if (n.vendido) {
+    info.innerHTML = `
+      <strong>Estado:</strong> ✅ Vendido<br>
+      <strong>Nombre:</strong> ${n.nombre || '–'}<br>
+      <strong>Referencia:</strong> ${n.referencia || '–'}<br>
+      <strong>Monto:</strong> $${n.monto || '–'}<br>
+      <strong>Método:</strong> ${n.metodo_pago || '–'}<br>
+      <strong>Fecha:</strong> ${n.fecha ? n.fecha.replace('T',' ').substring(0,16) : '–'}
+    `;
+    actions.innerHTML = `
+      <button class="btn btn-red" onclick="liberarNumero(${n.numero})">🗑 Liberar número</button>
+      <button class="btn btn-gray" onclick="cerrarModal()">Cerrar</button>
+    `;
+  } else {
+    info.innerHTML = `<strong>Estado:</strong> ⬜ Disponible`;
+    actions.innerHTML = `
+      <button class="btn btn-green" onclick="preseleccionar(${n.numero})">📋 Seleccionar para venta</button>
+      <button class="btn btn-gray" onclick="cerrarModal()">Cerrar</button>
+    `;
+  }
+  document.getElementById('modal').classList.add('activo');
+}
+
+function preseleccionar(num) {
+  document.getElementById('f-numero').value = num;
+  cerrarModal();
+  document.getElementById('f-nombre').focus();
+}
+
+function cerrarModal(e) {
+  if (!e || e.target.id === 'modal') {
+    document.getElementById('modal').classList.remove('activo');
+  }
+}
+
+async function venderNumero() {
+  const numero = document.getElementById('f-numero').value.trim();
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const referencia = document.getElementById('f-referencia').value.trim();
+  const monto = document.getElementById('f-monto').value.trim();
+  const metodo = document.getElementById('f-metodo').value;
+
+  if (numero === '' || nombre === '' || monto === '') {
+    mostrarToast('⚠️ Completa número, nombre y monto', true); return;
+  }
+  if (parseInt(numero) < 0 || parseInt(numero) > 999) {
+    mostrarToast('⚠️ Número fuera de rango (0–999)', true); return;
+  }
+
+  const fd = new FormData();
+  fd.append('numero', numero);
+  fd.append('nombre', nombre);
+  fd.append('referencia', referencia);
+  fd.append('monto', monto);
+  fd.append('metodo_pago', metodo);
+
+  try {
+    const res = await fetch('/api/vender', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) { mostrarToast('❌ ' + data.detail, true); return; }
+    mostrarToast(`✅ Número ${String(numero).padStart(3,'0')} vendido a ${nombre}`);
+    ['f-numero','f-nombre','f-referencia','f-monto'].forEach(id => document.getElementById(id).value = '');
+    await cargarDatos();
+  } catch(e) { mostrarToast('❌ Error de red', true); }
+}
+
+async function liberarNumero(num) {
+  const fd = new FormData();
+  fd.append('numero', num);
+  const res = await fetch('/api/liberar', { method: 'POST', body: fd });
+  const data = await res.json();
+  if (!res.ok) { mostrarToast('❌ ' + data.detail, true); return; }
+  mostrarToast(`🔓 Número ${String(num).padStart(3,'0')} liberado`);
+  cerrarModal();
+  await cargarDatos();
+}
+
+function mostrarToast(msg, error = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = error ? 'error show' : 'show';
+  setTimeout(() => t.className = '', 3000);
+}
+
+cargarDatos();
+</script>
+</body>
+</html>
