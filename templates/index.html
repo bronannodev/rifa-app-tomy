@@ -1,256 +1,237 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🎟️ Gestión de Rifa</title>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<title>Rifa Manager</title>
+<script>
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "primary": "#2b8cee",
+          "background-light": "#f6f7f8",
+          "background-dark": "#101922",
+          "success": "#22c55e",
+          "neutral-gray": "#94a3b8",
+        },
+        fontFamily: { "display": ["Inter", "sans-serif"] },
+        borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+      },
+    },
+  }
+</script>
 <style>
-  :root {
-    --verde: #2e7d32;
-    --verde-claro: #4caf50;
-    --gris: #90a4ae;
-    --gris-claro: #eceff1;
-    --acento: #ff6f00;
-    --bg: #f0f4f8;
-    --card: #ffffff;
-    --texto: #1a1a2e;
-    --sombra: 0 2px 12px rgba(0,0,0,0.10);
-    --radius: 12px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--texto); min-height: 100vh; }
-
-  header {
-    background: linear-gradient(135deg, #1a472a 0%, #2e7d32 100%);
-    color: white; padding: 18px 20px;
-    display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: 10px; box-shadow: var(--sombra);
-    position: sticky; top: 0; z-index: 100;
-  }
-  header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
-  header small { font-size: 0.8rem; opacity: 0.8; }
-
-  .stats-bar {
-    display: flex; gap: 12px; padding: 16px 16px 0;
-    flex-wrap: wrap;
-  }
-  .stat-card {
-    background: var(--card); border-radius: var(--radius);
-    padding: 14px 18px; flex: 1; min-width: 130px;
-    box-shadow: var(--sombra); text-align: center;
-  }
-  .stat-card .valor { font-size: 1.8rem; font-weight: 800; color: var(--verde); }
-  .stat-card .label { font-size: 0.72rem; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
-  .stat-card.acento .valor { color: var(--acento); }
-
-  .container { padding: 16px; max-width: 1200px; margin: 0 auto; }
-
-  .panel {
-    background: var(--card); border-radius: var(--radius);
-    box-shadow: var(--sombra); padding: 18px; margin-bottom: 16px;
-  }
-  .panel-title { font-size: 0.9rem; font-weight: 700; color: #444; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
-
-  /* Formulario */
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  @media (max-width: 480px) { .form-grid { grid-template-columns: 1fr; } }
-  .form-group { display: flex; flex-direction: column; gap: 4px; }
-  .form-group label { font-size: 0.78rem; font-weight: 600; color: #555; }
-  .form-group input, .form-group select {
-    padding: 9px 12px; border: 1.5px solid #ddd; border-radius: 8px;
-    font-size: 0.92rem; background: #fafafa; transition: border 0.2s;
-  }
-  .form-group input:focus, .form-group select:focus {
-    outline: none; border-color: var(--verde); background: white;
-  }
-  .form-group.full { grid-column: 1 / -1; }
-
-  .btn {
-    padding: 10px 20px; border: none; border-radius: 8px; font-weight: 700;
-    font-size: 0.9rem; cursor: pointer; transition: all 0.2s; display: inline-flex;
-    align-items: center; gap: 6px;
-  }
-  .btn-green { background: var(--verde); color: white; }
-  .btn-green:hover { background: #1b5e20; }
-  .btn-orange { background: var(--acento); color: white; }
-  .btn-orange:hover { background: #e65100; }
-  .btn-gray { background: #78909c; color: white; }
-  .btn-gray:hover { background: #546e7a; }
-  .btn-red { background: #c62828; color: white; font-size: 0.78rem; padding: 6px 12px; }
-  .btn-red:hover { background: #b71c1c; }
-
-  /* Controles de filtro y búsqueda */
-  .controles { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-  .controles input[type=text] {
-    padding: 9px 12px; border: 1.5px solid #ddd; border-radius: 8px;
-    font-size: 0.9rem; flex: 1; min-width: 120px;
-  }
-  .controles input:focus { outline: none; border-color: var(--verde); }
-  .filtro-btns { display: flex; gap: 6px; }
-  .filtro-btn {
-    padding: 8px 14px; border: 1.5px solid #ddd; border-radius: 8px;
-    background: white; font-size: 0.82rem; cursor: pointer; font-weight: 600; transition: all 0.2s;
-  }
-  .filtro-btn.activo { background: var(--verde); color: white; border-color: var(--verde); }
-
-  /* Grilla de números */
-  #grilla {
+  .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+  .grid-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
-    gap: 5px;
-    max-height: 520px;
-    overflow-y: auto;
-    padding: 4px;
+    grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+    gap: 4px;
   }
-  .num-cell {
-    aspect-ratio: 1;
-    border-radius: 7px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.7rem; font-weight: 700; cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.15s;
-    user-select: none;
-  }
-  .num-cell:hover { transform: scale(1.12); box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1; }
-  .num-cell.disponible { background: var(--gris-claro); color: #546e7a; border: 1.5px solid #cfd8dc; }
-  .num-cell.vendido { background: var(--verde-claro); color: white; border: 1.5px solid var(--verde); }
+  .num-cell { transition: transform 0.1s, opacity 0.1s; }
+  .num-cell:hover { transform: scale(1.15); z-index: 10; }
   .num-cell.oculto { display: none; }
-
-  /* Rangos disponibles */
-  .rangos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
-  .rango-card {
-    border: 1.5px solid #ddd; border-radius: 10px; padding: 10px 12px;
-    background: #fafafa;
-  }
-  .rango-card .rango-titulo { font-size: 0.78rem; font-weight: 700; color: #444; margin-bottom: 6px; }
-  .rango-card .rango-numeros { font-size: 0.7rem; color: #666; line-height: 1.5; word-break: break-all; }
-  .rango-card .btn-copiar {
-    margin-top: 8px; width: 100%; padding: 6px;
-    border: none; border-radius: 6px; background: #e3f2fd;
-    color: #1565c0; font-size: 0.75rem; font-weight: 700; cursor: pointer;
-  }
-  .rango-card .btn-copiar:hover { background: #1565c0; color: white; }
-
-  /* Modal */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.55); z-index: 500;
-    align-items: center; justify-content: center; padding: 16px;
-  }
-  .modal-overlay.activo { display: flex; }
-  .modal {
-    background: white; border-radius: var(--radius); padding: 24px;
-    max-width: 380px; width: 100%; box-shadow: 0 8px 40px rgba(0,0,0,0.25);
-    animation: slideUp 0.2s ease;
-  }
-  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-  .modal h3 { margin-bottom: 14px; font-size: 1.05rem; }
-  .modal-info { font-size: 0.85rem; color: #555; margin-bottom: 14px; line-height: 1.6; }
-  .modal-info strong { color: var(--texto); }
-  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 
   /* Toast */
   #toast {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px);
-    background: #1a1a2e; color: white; padding: 12px 20px; border-radius: 10px;
-    font-size: 0.88rem; font-weight: 600; z-index: 999; transition: transform 0.3s;
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #1e293b; color: white;
+    padding: 12px 20px; border-radius: 10px;
+    font-size: 0.85rem; font-weight: 600;
+    z-index: 9999; transition: transform 0.3s ease;
     pointer-events: none; white-space: nowrap;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
   }
   #toast.show { transform: translateX(-50%) translateY(0); }
-  #toast.error { background: #c62828; }
+  #toast.error { background: #dc2626; }
+  #toast.success { background: #16a34a; }
 
-  .acciones-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-  .divider { border: none; border-top: 1.5px solid #eee; margin: 4px 0 12px; }
+  /* Modal */
+  #modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 500;
+    align-items: center; justify-content: center; padding: 16px;
+  }
+  #modal-overlay.active { display: flex; }
+  #modal-box { animation: slideUp 0.2s ease; }
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
 </style>
 </head>
-<body>
+<body class="bg-background-light font-display text-slate-900 min-h-screen">
 
-<header>
-  <div>
-    <h1>🎟️ Gestión de Rifa</h1>
-    <small>Números 000 – 999</small>
-  </div>
-  <a href="/descargar-excel" class="btn btn-orange">⬇️ Descargar Excel</a>
-</header>
+<div class="flex flex-col min-h-screen">
 
-<div class="stats-bar">
-  <div class="stat-card">
-    <div class="valor" id="stat-vendidos">{{ vendidos }}</div>
-    <div class="label">Vendidos</div>
-  </div>
-  <div class="stat-card">
-    <div class="valor" id="stat-disponibles" style="color:#78909c">{{ disponibles }}</div>
-    <div class="label">Disponibles</div>
-  </div>
-  <div class="stat-card acento">
-    <div class="valor" id="stat-recaudado">${{ "%.0f"|format(recaudado) }}</div>
-    <div class="label">Recaudado</div>
-  </div>
-</div>
+  <!-- Header -->
+  <header class="sticky top-0 z-50 bg-white border-b border-slate-200 px-4 lg:px-10 py-3 flex items-center justify-between shadow-sm">
+    <div class="flex items-center gap-3">
+      <div class="bg-primary p-2 rounded-lg flex items-center justify-center text-white">
+        <span class="material-symbols-outlined text-2xl">confirmation_number</span>
+      </div>
+      <h1 class="text-xl font-bold tracking-tight text-slate-900">Rifa</h1>
+    </div>
+    <a href="/descargar-excel" class="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-blue-600 transition-colors">
+      <span class="material-symbols-outlined text-lg">download</span>
+      <span class="hidden sm:inline">Descargar Excel</span>
+    </a>
+  </header>
 
-<div class="container">
+  <main class="flex-1 max-w-7xl mx-auto w-full p-4 lg:p-8 space-y-6">
 
-  <!-- Formulario vender -->
-  <div class="panel">
-    <div class="panel-title">📋 Registrar Venta</div>
-    <div class="form-grid" id="form-venta">
-      <div class="form-group">
-        <label>Número (0–999)</label>
-        <input type="number" id="f-numero" min="0" max="999" placeholder="Ej: 42">
+    <!-- Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-2xl">check_circle</span>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-slate-500">Vendidos</p>
+          <p class="text-2xl font-bold text-slate-900" id="stat-vendidos">—</p>
+        </div>
       </div>
-      <div class="form-group">
-        <label>Nombre</label>
-        <input type="text" id="f-nombre" placeholder="Nombre del comprador">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-2xl">event_available</span>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-slate-500">Disponibles</p>
+          <p class="text-2xl font-bold text-slate-900" id="stat-disponibles">—</p>
+        </div>
       </div>
-      <div class="form-group">
-        <label>Referencia</label>
-        <input type="text" id="f-referencia" placeholder="Comprobante / referencia">
-      </div>
-      <div class="form-group">
-        <label>Monto</label>
-        <input type="number" id="f-monto" min="0" step="0.01" placeholder="0.00">
-      </div>
-      <div class="form-group">
-        <label>Método de Pago</label>
-        <select id="f-metodo">
-          <option value="transferencia">Transferencia</option>
-          <option value="efectivo">Efectivo</option>
-        </select>
-      </div>
-      <div class="form-group" style="justify-content:flex-end; padding-top:20px;">
-        <button class="btn btn-green" onclick="venderNumero()">✅ Registrar Venta</button>
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-amber-100 text-amber-500 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-2xl">payments</span>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-slate-500">Total Recaudado</p>
+          <p class="text-2xl font-bold text-slate-900" id="stat-recaudado">—</p>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Grilla -->
-  <div class="panel">
-    <div class="panel-title">🔢 Tablero de Números</div>
-    <div class="controles">
-      <input type="text" id="buscador" placeholder="🔍 Buscar número..." oninput="filtrar()" style="max-width:180px;">
-      <div class="filtro-btns">
-        <button class="filtro-btn activo" onclick="setFiltro('todos', this)">Todos</button>
-        <button class="filtro-btn" onclick="setFiltro('vendidos', this)">Vendidos</button>
-        <button class="filtro-btn" onclick="setFiltro('disponibles', this)">Disponibles</button>
+    <!-- Main layout -->
+    <div class="flex flex-col lg:flex-row gap-6">
+
+      <!-- Grid + Rangos -->
+      <div class="flex-1 space-y-6 order-2 lg:order-1 min-w-0">
+
+        <!-- Grid panel -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+            <div class="relative flex-1 max-w-xs">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+              <input id="buscador" oninput="filtrar()"
+                class="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                placeholder="Buscar número (000-999)" type="text"/>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="setFiltro('todos', this)" class="filtro-btn px-4 py-1.5 bg-primary text-white text-xs font-semibold rounded-full transition-colors">Todos</button>
+              <button onclick="setFiltro('vendidos', this)" class="filtro-btn px-4 py-1.5 bg-slate-100 text-slate-600 text-xs font-semibold rounded-full hover:bg-slate-200 transition-colors">Vendidos</button>
+              <button onclick="setFiltro('disponibles', this)" class="filtro-btn px-4 py-1.5 bg-slate-100 text-slate-600 text-xs font-semibold rounded-full hover:bg-slate-200 transition-colors">Disponibles</button>
+            </div>
+          </div>
+          <div id="grilla" class="grid-container max-h-[560px] overflow-y-auto pr-1 custom-scrollbar">
+            <!-- generado por JS -->
+          </div>
+        </div>
+
+        <!-- Rangos -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <h3 class="text-base font-bold text-slate-900 mb-4">Números Disponibles por Rango</h3>
+          <div id="rangos" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- generado por JS -->
+          </div>
+        </div>
+
       </div>
+
+      <!-- Sidebar formulario -->
+      <aside class="w-full lg:w-96 order-1 lg:order-2 flex-shrink-0">
+        <div class="sticky top-20 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5">
+          <div class="border-b border-slate-200 pb-4">
+            <h2 class="text-lg font-bold text-slate-900">Registrar Venta</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Complete los datos para asignar el número</p>
+          </div>
+
+          <div class="space-y-4">
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-slate-700">Número de Rifa</label>
+              <input id="f-numero" type="number" min="0" max="999"
+                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                placeholder="Ej: 123"/>
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-slate-700">Nombre del Cliente</label>
+              <input id="f-nombre" type="text"
+                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                placeholder="Nombre completo"/>
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-slate-700">Referencia / Teléfono</label>
+              <input id="f-referencia" type="text"
+                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                placeholder="WhatsApp o comprobante"/>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-slate-700">Monto</label>
+                <div class="relative">
+                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                  <input id="f-monto" type="number" min="0" step="0.01"
+                    class="w-full pl-7 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                    placeholder="0.00"/>
+                </div>
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-slate-700">Método de Pago</label>
+                <select id="f-metodo"
+                  class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm">
+                  <option value="transferencia">Transferencia</option>
+                  <option value="efectivo">Efectivo</option>
+                </select>
+              </div>
+            </div>
+
+            <button onclick="venderNumero()"
+              class="w-full bg-primary text-white py-3 rounded-lg font-bold text-sm shadow-md hover:bg-blue-600 transition-all flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined text-lg">app_registration</span>
+              Registrar Venta
+            </button>
+          </div>
+
+          <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-primary text-lg flex-shrink-0">info</span>
+              <p class="text-xs text-primary leading-relaxed">
+                También podés hacer click en cualquier número disponible de la grilla para preseleccionarlo.
+              </p>
+            </div>
+          </div>
+        </div>
+      </aside>
     </div>
-    <hr class="divider">
-    <div id="grilla"></div>
-  </div>
+  </main>
 
-  <!-- Rangos disponibles -->
-  <div class="panel">
-    <div class="panel-title">📋 Números Disponibles por Rango</div>
-    <div class="rangos-grid" id="rangos"></div>
-  </div>
-
+  <footer class="py-5 px-4 text-center text-slate-400 text-xs border-t border-slate-200">
+    © 2025 Rifa Manager · Gestión eficiente de rifas y sorteos
+  </footer>
 </div>
 
 <!-- Modal detalle número -->
-<div class="modal-overlay" id="modal" onclick="cerrarModal(event)">
-  <div class="modal" id="modal-content">
-    <h3 id="modal-titulo"></h3>
-    <div class="modal-info" id="modal-info"></div>
-    <div class="modal-actions" id="modal-actions"></div>
+<div id="modal-overlay" onclick="cerrarModalOverlay(event)">
+  <div id="modal-box" class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm">
+    <h3 id="modal-titulo" class="text-lg font-bold text-slate-900 mb-4"></h3>
+    <div id="modal-info" class="text-sm text-slate-600 space-y-2 mb-5"></div>
+    <div id="modal-actions" class="flex gap-3 justify-end"></div>
   </div>
 </div>
 
@@ -262,38 +243,48 @@ let numeros = [];
 let filtroActual = 'todos';
 
 async function cargarDatos() {
-  const res = await fetch('/api/numeros');
-  numeros = await res.json();
-  renderGrilla();
-  renderRangos();
-  actualizarStats();
+  try {
+    const res = await fetch('/api/numeros');
+    numeros = await res.json();
+    renderGrilla();
+    renderRangos();
+    renderStats();
+  } catch(e) {
+    mostrarToast('Error al cargar datos', 'error');
+  }
 }
 
-async function actualizarStats() {
-  const r = await fetch('/api/stats');
-  const d = await r.json();
-  document.getElementById('stat-vendidos').textContent = d.vendidos;
-  document.getElementById('stat-disponibles').textContent = d.disponibles;
-  document.getElementById('stat-recaudado').textContent = '$' + Math.round(d.recaudado).toLocaleString();
+function renderStats() {
+  const vendidos = numeros.filter(n => n.vendido).length;
+  const disponibles = 1000 - vendidos;
+  const recaudado = numeros.filter(n => n.vendido).reduce((s, n) => s + (n.monto || 0), 0);
+  document.getElementById('stat-vendidos').textContent = vendidos;
+  document.getElementById('stat-disponibles').textContent = disponibles;
+  document.getElementById('stat-recaudado').textContent = '$' + recaudado.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
 function renderGrilla() {
   const grilla = document.getElementById('grilla');
   const busqueda = document.getElementById('buscador').value.trim();
   grilla.innerHTML = '';
+
   numeros.forEach(n => {
     const div = document.createElement('div');
-    div.className = 'num-cell ' + (n.vendido ? 'vendido' : 'disponible');
-    div.textContent = String(n.numero).padStart(3, '0');
-    div.title = n.vendido ? `${n.numero} – ${n.nombre}` : `${n.numero} – Disponible`;
+    const num = String(n.numero).padStart(3, '0');
+    div.className = 'num-cell aspect-square flex items-center justify-center rounded text-[10px] font-bold cursor-pointer relative ' +
+      (n.vendido
+        ? 'bg-success text-white hover:opacity-80'
+        : 'bg-slate-100 text-slate-500 hover:bg-blue-100 hover:text-primary');
+
+    div.innerHTML = num + (n.vendido ? '<span class="material-symbols-outlined text-[8px] absolute top-0.5 right-0.5">check</span>' : '');
+    div.title = n.vendido ? `${num} – ${n.nombre}` : `${num} – Disponible`;
     div.onclick = () => abrirModal(n);
 
     const mostrarFiltro =
       filtroActual === 'todos' ||
       (filtroActual === 'vendidos' && n.vendido) ||
       (filtroActual === 'disponibles' && !n.vendido);
-
-    const mostrarBusqueda = busqueda === '' || String(n.numero).padStart(3,'0').includes(busqueda) || String(n.numero).includes(busqueda);
+    const mostrarBusqueda = busqueda === '' || num.includes(busqueda) || String(n.numero).includes(busqueda);
 
     if (!mostrarFiltro || !mostrarBusqueda) div.classList.add('oculto');
     grilla.appendChild(div);
@@ -305,73 +296,104 @@ function renderRangos() {
   container.innerHTML = '';
   for (let base = 0; base < 1000; base += 100) {
     const disponibles = numeros.filter(n => n.numero >= base && n.numero < base + 100 && !n.vendido);
-    const card = document.createElement('div');
-    card.className = 'rango-card';
+    const vendidos = 100 - disponibles.length;
     const lista = disponibles.map(n => String(n.numero).padStart(3,'0')).join(', ');
-    card.innerHTML = `
-      <div class="rango-titulo">${String(base).padStart(3,'0')} – ${String(base+99).padStart(3,'0')} (${disponibles.length} disp.)</div>
-      <div class="rango-numeros">${lista || '<em style="color:#aaa">Ninguno disponible</em>'}</div>
-      ${disponibles.length > 0 ? `<button class="btn-copiar" onclick="copiarRango('${lista}', this)">📋 Copiar lista</button>` : ''}
+    const div = document.createElement('div');
+    div.className = 'bg-white border border-slate-200 rounded-xl p-4 flex items-start justify-between gap-3';
+    div.innerHTML = `
+      <div class="min-w-0">
+        <p class="font-bold text-sm">${String(base).padStart(3,'0')} – ${String(base+99).padStart(3,'0')}</p>
+        <p class="text-xs text-slate-500 mt-0.5">${vendidos} vendidos · ${disponibles.length} disponibles</p>
+        <p class="text-xs text-slate-400 mt-1 truncate max-w-[200px]">${lista || 'Ninguno disponible'}</p>
+      </div>
+      ${disponibles.length > 0 ? `
+      <button onclick="copiarRango('${lista}', this)"
+        class="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 text-primary hover:bg-blue-50 rounded-lg text-xs font-semibold transition-colors border border-blue-100">
+        <span class="material-symbols-outlined text-sm">content_copy</span>
+        Copiar
+      </button>` : ''}
     `;
-    container.appendChild(card);
+    container.appendChild(div);
   }
 }
 
 function copiarRango(texto, btn) {
   navigator.clipboard.writeText(texto).then(() => {
-    btn.textContent = '✅ Copiado!';
-    setTimeout(() => btn.textContent = '📋 Copiar lista', 1800);
+    btn.innerHTML = '<span class="material-symbols-outlined text-sm">check</span> Copiado';
+    setTimeout(() => {
+      btn.innerHTML = '<span class="material-symbols-outlined text-sm">content_copy</span> Copiar';
+    }, 2000);
   });
 }
 
 function setFiltro(f, btn) {
   filtroActual = f;
-  document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('activo'));
-  btn.classList.add('activo');
+  document.querySelectorAll('.filtro-btn').forEach(b => {
+    b.className = 'filtro-btn px-4 py-1.5 bg-slate-100 text-slate-600 text-xs font-semibold rounded-full hover:bg-slate-200 transition-colors';
+  });
+  btn.className = 'filtro-btn px-4 py-1.5 bg-primary text-white text-xs font-semibold rounded-full transition-colors';
   filtrar();
 }
 
 function filtrar() { renderGrilla(); }
 
 function abrirModal(n) {
-  const titulo = document.getElementById('modal-titulo');
-  const info = document.getElementById('modal-info');
-  const actions = document.getElementById('modal-actions');
-  titulo.textContent = `Número ${String(n.numero).padStart(3,'0')}`;
+  const num = String(n.numero).padStart(3,'0');
+  document.getElementById('modal-titulo').textContent = `Número ${num}`;
 
   if (n.vendido) {
-    info.innerHTML = `
-      <strong>Estado:</strong> ✅ Vendido<br>
-      <strong>Nombre:</strong> ${n.nombre || '–'}<br>
-      <strong>Referencia:</strong> ${n.referencia || '–'}<br>
-      <strong>Monto:</strong> $${n.monto || '–'}<br>
-      <strong>Método:</strong> ${n.metodo_pago || '–'}<br>
-      <strong>Fecha:</strong> ${n.fecha ? n.fecha.replace('T',' ').substring(0,16) : '–'}
+    document.getElementById('modal-info').innerHTML = `
+      <div class="flex items-center gap-2 mb-3">
+        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold">
+          <span class="material-symbols-outlined text-sm">check_circle</span> Vendido
+        </span>
+      </div>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between"><span class="text-slate-500">Nombre</span><span class="font-semibold">${n.nombre || '—'}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Referencia</span><span class="font-semibold">${n.referencia || '—'}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Monto</span><span class="font-semibold">$${n.monto || '—'}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Método</span><span class="font-semibold capitalize">${n.metodo_pago || '—'}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Fecha</span><span class="font-semibold">${n.fecha ? n.fecha.replace('T',' ').substring(0,16) : '—'}</span></div>
+      </div>
     `;
-    actions.innerHTML = `
-      <button class="btn btn-red" onclick="liberarNumero(${n.numero})">🗑 Liberar número</button>
-      <button class="btn btn-gray" onclick="cerrarModal()">Cerrar</button>
+    document.getElementById('modal-actions').innerHTML = `
+      <button onclick="cerrarModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Cerrar</button>
+      <button onclick="liberarNumero(${n.numero})" class="px-4 py-2 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1.5">
+        <span class="material-symbols-outlined text-base">delete</span> Liberar
+      </button>
     `;
   } else {
-    info.innerHTML = `<strong>Estado:</strong> ⬜ Disponible`;
-    actions.innerHTML = `
-      <button class="btn btn-green" onclick="preseleccionar(${n.numero})">📋 Seleccionar para venta</button>
-      <button class="btn btn-gray" onclick="cerrarModal()">Cerrar</button>
+    document.getElementById('modal-info').innerHTML = `
+      <div class="flex items-center gap-2 mb-3">
+        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
+          <span class="material-symbols-outlined text-sm">radio_button_unchecked</span> Disponible
+        </span>
+      </div>
+      <p class="text-sm text-slate-500">Este número aún no ha sido vendido.</p>
+    `;
+    document.getElementById('modal-actions').innerHTML = `
+      <button onclick="cerrarModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Cerrar</button>
+      <button onclick="preseleccionar(${n.numero})" class="px-4 py-2 text-sm font-semibold bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-1.5">
+        <span class="material-symbols-outlined text-base">edit</span> Seleccionar
+      </button>
     `;
   }
-  document.getElementById('modal').classList.add('activo');
+  document.getElementById('modal-overlay').classList.add('active');
 }
 
 function preseleccionar(num) {
   document.getElementById('f-numero').value = num;
   cerrarModal();
   document.getElementById('f-nombre').focus();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function cerrarModal(e) {
-  if (!e || e.target.id === 'modal') {
-    document.getElementById('modal').classList.remove('activo');
-  }
+function cerrarModal() {
+  document.getElementById('modal-overlay').classList.remove('active');
+}
+
+function cerrarModalOverlay(e) {
+  if (e.target.id === 'modal-overlay') cerrarModal();
 }
 
 async function venderNumero() {
@@ -381,11 +403,11 @@ async function venderNumero() {
   const monto = document.getElementById('f-monto').value.trim();
   const metodo = document.getElementById('f-metodo').value;
 
-  if (numero === '' || nombre === '' || monto === '') {
-    mostrarToast('⚠️ Completa número, nombre y monto', true); return;
+  if (!numero || !nombre || !monto) {
+    mostrarToast('Completá número, nombre y monto', 'error'); return;
   }
   if (parseInt(numero) < 0 || parseInt(numero) > 999) {
-    mostrarToast('⚠️ Número fuera de rango (0–999)', true); return;
+    mostrarToast('Número fuera de rango (0–999)', 'error'); return;
   }
 
   const fd = new FormData();
@@ -398,28 +420,30 @@ async function venderNumero() {
   try {
     const res = await fetch('/api/vender', { method: 'POST', body: fd });
     const data = await res.json();
-    if (!res.ok) { mostrarToast('❌ ' + data.detail, true); return; }
-    mostrarToast(`✅ Número ${String(numero).padStart(3,'0')} vendido a ${nombre}`);
+    if (!res.ok) { mostrarToast(data.detail, 'error'); return; }
+    mostrarToast(`✅ Número ${String(numero).padStart(3,'0')} vendido a ${nombre}`, 'success');
     ['f-numero','f-nombre','f-referencia','f-monto'].forEach(id => document.getElementById(id).value = '');
     await cargarDatos();
-  } catch(e) { mostrarToast('❌ Error de red', true); }
+  } catch(e) { mostrarToast('Error de red', 'error'); }
 }
 
 async function liberarNumero(num) {
   const fd = new FormData();
   fd.append('numero', num);
-  const res = await fetch('/api/liberar', { method: 'POST', body: fd });
-  const data = await res.json();
-  if (!res.ok) { mostrarToast('❌ ' + data.detail, true); return; }
-  mostrarToast(`🔓 Número ${String(num).padStart(3,'0')} liberado`);
-  cerrarModal();
-  await cargarDatos();
+  try {
+    const res = await fetch('/api/liberar', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) { mostrarToast(data.detail, 'error'); return; }
+    mostrarToast(`🔓 Número ${String(num).padStart(3,'0')} liberado`, 'success');
+    cerrarModal();
+    await cargarDatos();
+  } catch(e) { mostrarToast('Error de red', 'error'); }
 }
 
-function mostrarToast(msg, error = false) {
+function mostrarToast(msg, tipo = 'success') {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = error ? 'error show' : 'show';
+  t.className = `${tipo} show`;
   setTimeout(() => t.className = '', 3000);
 }
 
