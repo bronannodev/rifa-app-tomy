@@ -18,15 +18,16 @@ Base.metadata.create_all(bind=engine)
 
 
 async def keep_alive():
-    await asyncio.sleep(60)
+    await asyncio.sleep(30)  # espera inicial antes del primer ping
     while True:
         try:
             url = os.environ.get("RENDER_EXTERNAL_URL", "http://localhost:8000")
             async with httpx.AsyncClient() as client:
-                await client.get(f"{url}/api/stats", timeout=10)
-        except:
-            pass
-        await asyncio.sleep(600)
+                r = await client.get(f"{url}/api/stats", timeout=10)
+            print(f"[keep_alive] ping OK → {url}/api/stats ({r.status_code})")
+        except Exception as e:
+            print(f"[keep_alive] ping FAILED: {e}")
+        await asyncio.sleep(600)  # ping cada 10 minutos
 
 
 @asynccontextmanager
