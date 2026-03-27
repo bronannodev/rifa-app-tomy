@@ -2,9 +2,8 @@ services:
   - type: web
     name: rifa-app
     env: python
-    rootDir: app
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r app/requirements.txt
+    startCommand: cd app && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
         fromDatabase:
