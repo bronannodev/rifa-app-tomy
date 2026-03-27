@@ -1,0 +1,47 @@
+# ── Base de datos local (pruebas) ──────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Variables de entorno / datos sensibles ──────────
+.env
+.env.*
+*.env
+secrets.py
+config_local.py
+
+# ── Entorno virtual Python ──────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Cache de Python ─────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# ── Archivos de build / distribución ────────────────
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# ── Logs ────────────────────────────────────────────
+*.log
+logs/
+
+# ── IDE / editores ──────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ── Sistema operativo ───────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
